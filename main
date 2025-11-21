@@ -8,6 +8,8 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from datetime import datetime
 
+# Сейчас работает только с Gmail. Для других почтовых сервисов могут потребоваться другие настройки SMTP/портов/тесты. 
+
 # --- НАСТРОЙКИ ---
 # Данные для входа в почту отправителя (рекомендуется использовать отдельный ящик)
 EMAIL_ADDRESS = ""
