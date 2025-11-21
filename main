@@ -1,0 +1,86 @@
+import pyautogui
+import smtplib
+import keyboard
+import os
+import sys
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from datetime import datetime
+
+# --- НАСТРОЙКИ ---
+# Данные для входа в почту отправителя (рекомендуется использовать отдельный ящик)
+EMAIL_ADDRESS = ""
+EMAIL_PASSWORD = ""  # Для Gmail используйте "пароль приложения"
+
+# Адрес получателя
+RECIPIENT_ADDRESS = ""
+
+# Горячие клавиши
+HOTKEY_SEND = "1"
+HOTKEY_SEND_AND_EXIT = "2"
+# --- КОНЕЦ НАСТРОЕК ---
+
+def take_screenshot():
+    """Делает скриншот и сохраняет его во временный файл."""
+    screenshot = pyautogui.screenshot()
+    filename = f"screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    screenshot.save(filename)
+    return filename
+
+def send_email(image_path):
+    """Отправляет электронное письмо со скриншотом."""
+    try:
+        msg = MIMEMultipart()
+        msg['Subject'] = f"Скриншот от {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = RECIPIENT_ADDRESS
+
+        text = MIMEText("Скриншот экрана в приложении.")
+        msg.attach(text)
+
+        with open(image_path, 'rb') as f:
+            img_data = f.read()
+        image = MIMEImage(img_data, name=os.path.basename(image_path))
+        msg.attach(image)
+
+        # Для Gmail используется порт 587
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, RECIPIENT_ADDRESS, msg.as_string())
+        
+        print(f"Письмо со скриншотом {image_path} успешно отправлено.")
+
+    except Exception as e:
+        print(f"Ошибка при отправке письма: {e}")
+    finally:
+        # Удаляем временный файл скриншота
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
+def on_send_hotkey():
+    """Действие по первой горячей клавише."""
+    print(f"Нажата горячая клавиша '{HOTKEY_SEND}'. Делаю скриншот и отправляю.")
+    screenshot_file = take_screenshot()
+    send_email(screenshot_file)
+
+def on_send_and_exit_hotkey():
+    """Действие по второй горячей клавише."""
+    print(f"Нажата горячая клавиша '{HOTKEY_SEND_AND_EXIT}'. Отправляю скриншот и завершаю работу.")
+    screenshot_file = take_screenshot()
+    send_email(screenshot_file)
+    print("Завершение работы скрипта.")
+    os._exit(0)
+
+def main():
+    """Основная функция, которая настраивает горячие клавиши."""
+    print("Скрипт запущен и ожидает нажатия горячих клавиш...")
+    keyboard.add_hotkey(HOTKEY_SEND, on_send_hotkey)
+    keyboard.add_hotkey(HOTKEY_SEND_AND_EXIT, on_send_and_exit_hotkey)
+
+    # Бесконечный цикл для поддержания работы скрипта в фоновом режиме
+    keyboard.wait()
+
+if __name__ == "__main__":
+    main()
